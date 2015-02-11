@@ -119,7 +119,7 @@ static NSString* MODE_STRINGS[] = {@"", @"-- VISUAL --", @"-- VISUAL LINE --", @
         [self.sourceView xvim_changeSelectionMode:_visual_mode];
     }
     if (self.initialToEOL) {
-        [self performSelector:@selector(DOLLAR)];
+		[self DOLLAR];
     }
 }
 

@@ -40,5 +40,16 @@
 // These are only for surpress warning
 - (XVimEvaluator*)b;
 - (XVimEvaluator*)B;
+
+- (XVimEvaluator*)DOLLAR;
+
+- (XVimEvaluator*)h;
+- (XVimEvaluator*)H;
+- (XVimEvaluator*)j;
+- (XVimEvaluator*)k;
+- (XVimEvaluator*)l;
+- (XVimEvaluator*)L;
+- (XVimEvaluator*)M;
+
 @end
 

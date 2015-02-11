@@ -24,8 +24,6 @@
 @property (nonatomic) NSRange startRange;
 @property (nonatomic) BOOL movementKeyPressed;
 @property (nonatomic, strong) NSString *lastInsertedText;
-@property (nonatomic, readonly, strong) NSArray *cancelKeys;
-@property (nonatomic, readonly, strong) NSArray *movementKeys;
 @property (nonatomic) BOOL enoughBufferForReplace;
 @end
 
@@ -39,8 +37,6 @@
 }
 
 @synthesize startRange = _startRange;
-@synthesize cancelKeys = _cancelKeys;
-@synthesize movementKeys = _movementKeys;
 @synthesize lastInsertedText = _lastInsertedText;
 @synthesize movementKeyPressed = _movementKeyPressed;
 @synthesize enoughBufferForReplace = _enoughBufferForReplace;
@@ -61,17 +57,6 @@
         _movementKeyPressed = NO;
         _insertedEventsAbort = NO;
         _enoughBufferForReplace = YES;
-        _cancelKeys = [[NSArray alloc] initWithObjects:
-                       [NSValue valueWithPointer:@selector(ESC:)],
-                       [NSValue valueWithPointer:@selector(C_LSQUAREBRACKET:)],
-                       [NSValue valueWithPointer:@selector(C_c:)],
-                       nil];
-        _movementKeys = [[NSArray alloc] initWithObjects:
-                         [NSValue valueWithPointer:@selector(Up:)],
-                         [NSValue valueWithPointer:@selector(Down:)],
-                         [NSValue valueWithPointer:@selector(Left:)],
-                         [NSValue valueWithPointer:@selector(Right:)],
-                         nil];
     }
     return self;
 }
