@@ -135,7 +135,7 @@ The dot command ('.') is supported.
   :w[rite] |
   :wq      |
   :q[uit]  |
-  :register| Show contents of registers
+  :reg[isters]| Show contents of registers
   :s[ubstitute]|
   :set     | See Options for supported variables
   :map     | Show all the current mapping. When with arguments maps globally across XVim, in all modes
@@ -203,7 +203,8 @@ Option | Effect
 r | Show vertical scrollbar
 b | Show horizontal scrollbar
 
-These changes only take effect on startup, meaning this option is only effective if used from within your .xvimrc.
+These changes take effect after you resizing the view.
+So if you cannot see the GUI changes, please resize the view.
 
 ## Key mapping
 

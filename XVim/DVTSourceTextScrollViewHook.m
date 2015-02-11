@@ -83,18 +83,23 @@ static NSString* XVIM_INSTALLED_OBSERVERS_DVTSOURCETEXTSCROLLVIEW = @"XVIM_INSTA
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath  ofObject:(id)object  change:(NSDictionary *)change  context:(void *)context {
-	if([keyPath isEqualToString:@"guioptions"]){
+    if([keyPath isEqualToString:@"guioptions"]){
         NSScrollView* view = (NSScrollView*)self;
         // Just updating the scrollers state.
+        // Current problem we have is that when invoking "set guioptions=rb"
+        // the alphaValue(=0) is not reflected to the view immideately.
+        // After you resizing the view, the scroll bars appears.
+        // I tried like [view needsDisplay:YES] or [view.verticalScroller needsDisplay:YES] and etc.
+        // but any method call doesn't work...
         if( [XVim.instance.options.guioptions rangeOfString:@"r"].location == NSNotFound) {
-            [view setHasVerticalScroller:NO];
+            view.verticalScroller.alphaValue=0;
         }else{
-            [view setHasVerticalScroller:YES];
+            view.verticalScroller.alphaValue=1;
         }
         if( [XVim.instance.options.guioptions rangeOfString:@"b"].location == NSNotFound) {
-            [view setHasHorizontalScroller:NO];
+            view.horizontalScroller.alphaValue=0;
         }else{
-            [view setHasHorizontalScroller:YES];
+            view.horizontalScroller.alphaValue=1;
         }
     }
 }

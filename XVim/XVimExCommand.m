@@ -532,7 +532,7 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
                        CMD(@"vnoremap", @"vnoremap:inWindow:"),
                        CMD(@"vnew", @"splitview:inWindow:"),
                        CMD(@"vnoremenu", @"menu:inWindow:"),
-                       CMD(@"vsplit", @"splitview:inWindow:"),
+                       CMD(@"vsplit", @"vsplitview:inWindow:"),
                        CMD(@"vunmap", @"vunmap:inWindow:"),
                        CMD(@"vunmenu", @"menu:inWindow:"),
                        CMD(@"write", @"write:inWindow:"),
@@ -880,6 +880,11 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
     [self mapClearMode:XVIM_MODE_CMDLINE];
 }
 
+- (void)cquit:(XVimExArg*)args inWindow:(XVimWindow*)window{
+    [window setForcusBackToSourceView];
+    [XVimLastActiveWorkspaceTabController() xvim_closeCurrentEditor];
+}
+
 - (void)debug:(XVimExArg*)args inWindow:(XVimWindow*)window{
     NSMutableArray* params = [NSMutableArray arrayWithArray:[args.arg componentsSeparatedByString:@" "]];
     if( [params count] == 0 ){
@@ -889,7 +894,10 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
     NSString* selector = [NSString stringWithFormat:@"%@:withWindow:",[params objectAtIndex:0]];
     [params removeObjectAtIndex:0];
     if( [debug respondsToSelector:NSSelectorFromString(selector)] ){
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         [debug performSelector:NSSelectorFromString(selector) withObject:params withObject:window];
+#pragma clang diagnostic pop
     }
 }
 
@@ -1037,7 +1045,7 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
     // We must make forcus back to editor first then invoke the command.
     // This is because I do not know how to move focus on newly visible text editor by invoking this command.
     // Without this focus manipulation the focus after the command does not goes to the text editor
-    //[window setForcusBackToSourceView];
+    [window setForcusBackToSourceView];
     [NSApp sendAction:@selector(jumpToNextCounterpart:) to:nil from:self];
 }
 
@@ -1083,6 +1091,11 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
 	[self mapMode:XVIM_MODE_OPERATOR_PENDING withArgs:args remap:YES];
 }
 
+- (void)only:(XVimExArg*)args inWindow:(XVimWindow*)window{
+    [window setForcusBackToSourceView];
+    [XVimLastActiveWorkspaceTabController() xvim_closeOtherEditors];
+}
+
 - (void)onoremap:(XVimExArg*)args inWindow:(XVimWindow*)window{
 	[self mapMode:XVIM_MODE_OPERATOR_PENDING withArgs:args remap:NO];
 }
@@ -1109,7 +1122,8 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
 }
 
 - (void)quit:(XVimExArg*)args inWindow:(XVimWindow*)window{ // :q
-    [NSApp sendAction:@selector(closeDocument:) to:nil from:self];
+    [window setForcusBackToSourceView];
+    [XVimLastActiveWorkspaceTabController() xvim_closeCurrentEditor];
 }
 
 - (void)reg:(XVimExArg*)args inWindow:(XVimWindow*)window{
@@ -1320,7 +1334,10 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
     IDEWorkspaceTabController* ctrl = XVimLastActiveWorkspaceTabController();
     if( [ctrl respondsToSelector:item.action] ){
         NSLog(@"IDEWorkspaceTabController perform action");
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         [ctrl performSelector:item.action withObject:item];
+#pragma clang diagnostic pop
     } else {
         [NSApp sendAction:item.action to:item.target from:item];
         NSLog(@"menu perform action");
@@ -1330,7 +1347,10 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
 - (void)xctabctrl:(XVimExArg*)args inWindow:(XVimWindow*)window{
     IDEWorkspaceTabController* ctrl = XVimLastActiveWorkspaceTabController();
     if( [ctrl respondsToSelector:NSSelectorFromString(args.arg)] ){
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         [ctrl performSelector:NSSelectorFromString(args.arg) withObject:self];
+#pragma clang diagnostic pop
     }
 }
 
