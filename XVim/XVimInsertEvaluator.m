@@ -30,7 +30,6 @@
 @implementation XVimInsertEvaluator{
     BOOL _insertedEventsAbort;
     NSMutableArray* _insertedEvents;
-    BOOL _oneCharMode;
     NSUInteger _blockEditColumn;
     XVimRange _blockLines;
     XVimInsertionPoint _mode;
@@ -43,17 +42,16 @@
 
 
 - (id)initWithWindow:(XVimWindow *)window{
-    return [self initWithWindow:window oneCharMode:NO mode:XVIM_INSERT_DEFAULT];
+    return [self initWithWindow:window mode:XVIM_INSERT_DEFAULT];
 }
 
-- (id)initWithWindow:(XVimWindow*)window oneCharMode:(BOOL)oneCharMode mode:(XVimInsertionPoint)mode{
+- (id)initWithWindow:(XVimWindow*)window mode:(XVimInsertionPoint)mode{
     self = [super initWithWindow:window];
     if (self) {
         _mode = mode;
         _blockEditColumn = NSNotFound;
         _blockLines = XVimMakeRange(NSNotFound, NSNotFound);
         _lastInsertedText = @"";
-        _oneCharMode = oneCharMode;
         _movementKeyPressed = NO;
         _insertedEventsAbort = NO;
         _enoughBufferForReplace = YES;
@@ -75,27 +73,6 @@
     self.startRange = [[self sourceView] selectedRange];
 }
 
-- (float)insertionPointHeightRatio{
-    if(_oneCharMode){
-        return 0.25;
-    }
-    return 1.0;
-}
-
-- (float)insertionPointWidthRatio{
-    if(_oneCharMode){
-        return 1.0;
-    }
-    return 0.15;
-}
-
-- (float)insertionPointAlphaRatio{
-    if(_oneCharMode){
-        return 0.5;
-    }
-    return 1.0;
-}
-
 - (XVimKeymap*)selectKeymapWithProvider:(id<XVimKeymapProvider>)keymapProvider{
 	return [keymapProvider keymapForMode:XVIM_MODE_INSERT];
 }
@@ -105,7 +82,7 @@
     NSUInteger startLoc = self.startRange.location;
     NSUInteger endLoc = [view selectedRange].location;
     NSRange textRange = NSMakeRange(NSNotFound, 0);
-    
+
     if( [[view string] length] == 0 ){
         return @"";
     }
@@ -113,7 +90,7 @@
     if( ( startLoc >= [[view string] length] ) ){
         startLoc = [[view string] length] - 1;
     }
-    
+
     // Is this really what we want to do?
     // This means just moving cursor forward or backward and escape from insert mode generates the inserted test this method return.
     //    -> The answer is 'OK'. see onMovementKeyPressed: method how it treats the inserted text.
@@ -124,7 +101,7 @@
     }
     NSString *text = [[view string] substringWithRange:textRange];
     return text;
-    
+
 }
 
 /*
@@ -142,62 +119,65 @@
     _insertedEventsAbort = YES;
     if (!self.movementKeyPressed){
         self.movementKeyPressed = YES;
-        
+
         // Store off any needed text
         self.lastInsertedText = [self insertedText];
         //[self recordTextIntoRegister:[XVim instance].recordingRegister];
     }
-    
+
     // Store off the new start range
     self.startRange = [[self sourceView] selectedRange];
+}
+
+- (void)repeatBlockText {
+    NSString *text = [self insertedText];
+    for( NSUInteger i = 0 ; i < [self numericArg]-1; i++ ){
+        [self.sourceView insertText:text];
+    }
+
+    if (_blockEditColumn != NSNotFound) {
+        XVimRange range = XVimMakeRange(_blockLines.begin + 1, _blockLines.end);
+        [self.sourceView xvim_blockInsertFixupWithText:text mode:_mode count:self.numericArg
+                                                column:_blockEditColumn lines:range];
+    }
 }
 
 - (void)didEndHandler{
     [super didEndHandler];
 	NSTextView *sourceView = [self sourceView];
 
-    if( !_insertedEventsAbort && !_oneCharMode ){
-        NSString *text = [self insertedText];
-        for( NSUInteger i = 0 ; i < [self numericArg]-1; i++ ){
-            [sourceView insertText:text];
-        }
-
-        if (_blockEditColumn != NSNotFound) {
-            XVimRange range = XVimMakeRange(_blockLines.begin + 1, _blockLines.end);
-            [sourceView xvim_blockInsertFixupWithText:text mode:_mode count:self.numericArg
-                                               column:_blockEditColumn lines:range];
-        }
+    if( !_insertedEventsAbort ){
+        [self repeatBlockText];
     }
 
     // Store off any needed text
     XVim *xvim = [XVim instance];
     xvim.lastVisualMode = self.sourceView.selectionMode;
     [xvim fixOperationCommands];
-    if( _oneCharMode ){
-    }else if (!self.movementKeyPressed){
+    if (!self.movementKeyPressed){
         //[self recordTextIntoRegister:xvim.recordingRegister];
         //[self recordTextIntoRegister:xvim.repeatRegister];
     }else if(self.lastInsertedText.length > 0){
         //[xvim.repeatRegister appendText:self.lastInsertedText];
     }
     [sourceView xvim_hideCompletions];
-	
+
     // Position for "^" is before escaped from insert mode
     NSUInteger pos = self.sourceView.insertionPoint;
     XVimMark* mark = XVimMakeMark([self.sourceView.textStorage xvim_lineNumberAtIndex:pos], [self.sourceView.textStorage xvim_columnOfIndex:pos], self.sourceView.documentURL.path);
     if( nil != mark.document ){
         [[XVim instance].marks setMark:mark forName:@"^"];
     }
-    
+
     [[self sourceView] xvim_escapeFromInsert];
-    
+
     // Position for "." is after escaped from insert mode
     pos = self.sourceView.insertionPoint;
     mark = XVimMakeMark([self.sourceView.textStorage xvim_lineNumberAtIndex:pos], [self.sourceView.textStorage xvim_columnOfIndex:pos], self.sourceView.documentURL.path);
     if( nil != mark.document ){
         [[XVim instance].marks setMark:mark forName:@"."];
     }
-    
+
 }
 
 - (BOOL)windowShouldReceive:(SEL)keySelector {
@@ -208,33 +188,31 @@
 
 - (XVimEvaluator*)eval:(XVimKeyStroke*)keyStroke{
     XVimEvaluator *nextEvaluator = self;
-    SEL keySelector = [keyStroke selectorForInstance:self];
-    if (keySelector){
+
+    SEL keySelector = keyStroke.selector;
+    if ([self respondsToSelector:keySelector]) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         nextEvaluator = [self performSelector:keySelector];
 #pragma clang diagnostic pop
-    }else if(self.movementKeyPressed){
-        // Flag movement key as not pressed until the next movement key is pressed
-        self.movementKeyPressed = NO;
-        
-        // Store off the new start range
-        self.startRange = [[self sourceView] selectedRange];
+    } else {
+        if (self.movementKeyPressed) {
+            // Flag movement key as not pressed until the next movement key is pressed
+            self.movementKeyPressed = NO;
+
+            // Store off the new start range
+            self.startRange = self.sourceView.selectedRange;
+        }
+        keySelector = nil;
     }
-    
+
     if (nextEvaluator == self && nil == keySelector){
         NSEvent *event = [keyStroke toEventwithWindowNumber:0 context:nil];
-        if (_oneCharMode) {
-            if( ![self.sourceView xvim_replaceCharacters:keyStroke.character count:[self numericArg]] ){
-                nextEvaluator = [XVimEvaluator invalidEvaluator];
-            }else{
-                nextEvaluator = nil;
-            }
-        } else if ([self windowShouldReceive:keySelector]) {
+        if ([self windowShouldReceive:keySelector]) {
             // Here we pass the key input to original text view.
             // The input coming to this method is already handled by "Input Method"
             // and the input maight be non ascii like 'あ'
-            if( keyStroke.modifier == 0 && isPrintable(keyStroke.character)){
+            if (keyStroke.isPrintable) {
                 [self.sourceView insertText:keyStroke.xvimString];
             }else{
                 [self.sourceView interpretKeyEvents:[NSArray arrayWithObject:event]];
