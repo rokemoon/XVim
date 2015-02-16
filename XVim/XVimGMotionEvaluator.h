@@ -12,4 +12,9 @@
 @interface XVimGMotionEvaluator : XVimEvaluator
 @property(strong) XVimMotion* motion;
 @property(strong) XVimKeyStroke* key;
+
+- (XVimEvaluator*)ASTERISK;
+- (XVimEvaluator*)NUMBER;
+- (XVimEvaluator*)SEMICOLON;
+	
 @end
