@@ -66,7 +66,6 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
 
 + (void) addXVimMenu{
     // Add XVim menu
-    NSMenu* menu = [[NSApplication sharedApplication] mainMenu];
     NSMenuItem* item = [[NSMenuItem alloc] init];
     item.title = @"XVim";
     NSMenu* m = [[NSMenu alloc] initWithTitle:@"XVim"];
@@ -109,18 +108,9 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     }
     
 
-    NSMenuItem* editorMenuItem = [menu itemWithTitle:@"Editor"];
-    if (editorMenuItem) {
-        // Add XVim menu next to Editor menu
-        [[editorMenuItem submenu] addItem:[NSMenuItem separatorItem]];
-        [[editorMenuItem submenu] addItem:item];
-    } else {
-        // if editor menu is not available
-        NSInteger editorIndex = [menu indexOfItemWithTitle:@"Edit"];
-        [menu insertItem:item atIndex:editorIndex];
-    }
-    return;
-    
+    NSMenu* menu = [[NSApplication sharedApplication] mainMenu];
+	NSInteger editorIndex = [menu indexOfItemWithTitle:@"Edit"];
+	[menu insertItem:item atIndex:editorIndex];
 }
 
 + (void) load{

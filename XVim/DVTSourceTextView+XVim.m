@@ -195,14 +195,14 @@ NSRect s_lastCaret;
         }
 
         // Erase old cursor.
-        [[NSBezierPath bezierPathWithRect:s_lastCaret] setClip];
-        [self xvim_drawRect:s_lastCaret];
-        
+//        [[NSBezierPath bezierPathWithRect:s_lastCaret] setClip];
+//        [self xvim_drawRect:s_lastCaret];
+
         NSUInteger glyphIndex = [self insertionPoint];
         NSRect glyphRect = [self xvim_boundingRectForGlyphIndex:glyphIndex];
         s_lastCaret = glyphRect;
 
-        [[NSBezierPath bezierPathWithRect:glyphRect] setClip];
+        [[NSBezierPath bezierPathWithRect:[self visibleRect]] setClip];
         [window drawInsertionPointInRect:glyphRect color:aColor];
     }@catch (NSException* exception) {
         ERROR_LOG(@"Exception %@: %@", [exception name], [exception reason]);
@@ -220,8 +220,8 @@ NSRect s_lastCaret;
     BOOL shouldDraw = NO;
 
 
-    if( ![self performSelector:@selector(_isLayerBacked)] ){
-        shouldClear = YES;
+	if( ![self performSelector:@selector(_isLayerBacked)] ){
+		shouldClear = YES;
         shouldDraw = ![[[XVim instance] options] blinkcursor] || flag;
     }
     else if( [[[XVim instance] options] blinkcursor] ){
@@ -230,19 +230,17 @@ NSRect s_lastCaret;
     }
 
     if (shouldClear) {
-        NSGraphicsContext *context = [NSGraphicsContext currentContext];
-        [context saveGraphicsState];
-
-        [[NSBezierPath bezierPathWithRect:s_lastCaret] setClip];
+//        NSGraphicsContext *context = [NSGraphicsContext currentContext];
+//        [context saveGraphicsState];
+//
+//        [[NSBezierPath bezierPathWithRect:s_lastCaret] setClip];
         [self xvim_drawRect:s_lastCaret];
-        [context restoreGraphicsState];
+//        [context restoreGraphicsState];
     }
 
     if (shouldDraw) {
         [self _drawInsertionPointInRect:rect color:color];
     }
-
-    return;
 }
 - (void)xvim_didChangeText{
     [self setNeedsUpdateFoundRanges:YES];
