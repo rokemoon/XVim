@@ -141,6 +141,42 @@ The dot command ('.') is supported.
   :sp[lit] | Add new assistant editor. Assistant editors are laid out horizontally.
   :vsp[lit]| Add new assistant editor. Assistant editors are laid out vertically.
 
+## Ex ranges
+
+ Range     | Note
+-----------|-----
+  :X,Y     | Multiple line range
+  :X-N,Y   | Multiple line range
+  :X+N,Y   | Multiple line range
+  :X       | Single line range
+  :X-N     | Single line range
+  :X+N     | Single line range
+  :-N      | Single line range, shortened version of X-N where X is '.'
+  :+N      | Single line range, shortened version of X+N where X is '.'
+
+In the above table, N can only be a digit, but X and Y can be a digit, a mark reference (EXAMPLE 'a), '.', or '$'.
+
+## Ex range commands
+
+ Command   | Note
+-----------|-----
+  y[ank]   | Yank lines in range
+  d[elete] | Delete lines in range
+  copy     | Copy lines in range to new location
+  t        | Synonym for copy
+  m[ove]   | Move lines in range to new location
+  sort     | Sort lines in range
+  s[ubstitute]      | Documented in "Search and Replace" above.  '&' and '~' can be used as synonyms for 's'.
+  !        | Execute command with external process
+
+Examples:
+
+    :1,.y
+    :4,5m$
+    :'a,'bd
+    :5t10
+
+
 ## Filename modifier for bang
 
  Modifier  |
@@ -190,6 +226,7 @@ The dot command ('.') is supported.
   [no]relativenumber |
   [no]alwaysuseinputsource | With this option all the input is first sent to input source of the system. If you are using France, Portugese or Swedish keyboard consider turning this on. When enabling this, also consider running `defaults write com.apple.dt.Xcode ApplePressAndHoldEnabled -bool false` to disable the press and hold character menu in recent OS X releases.  (See issue https://github.com/JugglerShu/XVim/issues/598).
   [no]blinkcursor |
+  [no]startofline | Tells XVim to move the cursor to the first non-blank of the line when using jump commands (`gg, G` etc). Defaults to on.
 
 
 ## guioptions
