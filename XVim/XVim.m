@@ -65,7 +65,7 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     }
 }
 
-+ (void) addXVimMenu{
++ (NSMenuItem*)xvimMenuItem{
     // Add XVim menu
     NSMenuItem* item = [[NSMenuItem alloc] init];
     item.title = @"XVim";
@@ -108,10 +108,7 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
         [subm setSubmenu:cat_menu];
     }
     
-
-    NSMenu* menu = [[NSApplication sharedApplication] mainMenu];
-	NSInteger editorIndex = [menu indexOfItemWithTitle:@"Edit"];
-	[menu insertItem:item atIndex:editorIndex];
+    return item;
 }
 
 + (void) load{
@@ -176,19 +173,13 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
 	if (self = [super init]) {
 		self.options = [[XVimOptions alloc] init];
         
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(applicationDidFinishLaunching_) name:NSApplicationDidFinishLaunchingNotification object:nil];
-	}
-	return self;
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(addMenuItem:) name:NSApplicationDidFinishLaunchingNotification object:nil];
+    }
+    return self;
 }
 
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
-- (void)applicationDidFinishLaunching_ {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [XVim addXVimMenu];
-    });
 }
 
 - (void)init2{
@@ -217,7 +208,17 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     [_options addObserver:self forKeyPath:@"debug" options:NSKeyValueObservingOptionNew context:nil];
 }
 
-
+- (void)addMenuItem:(NSNotification*)notification{
+    // It will fail in Xcode 6.4
+    // Check IDEApplicationController+Xvim.m
+    
+    NSMenu *menu = [[NSApplication sharedApplication] menu];
+    
+    NSMenuItem *editorMenuItem = [menu itemWithTitle:@"Editor"];
+    [[editorMenuItem submenu] addItem:[[self class] xvimMenuItem]];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:NSApplicationDidFinishLaunchingNotification object:nil];
+}
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
     if( [keyPath isEqualToString:@"debug"]) {

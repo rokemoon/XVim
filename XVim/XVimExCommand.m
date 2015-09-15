@@ -11,6 +11,7 @@
 #import "XVim.h"
 #import "XVimSearch.h"
 #import "IDEWorkspaceTabController+XVim.h"
+#import "NSColor+Extra.h"
 #import "NSTextView+VimOperation.h"
 #import "NSString+VimHelper.h"
 #import "Logger.h"
@@ -28,6 +29,7 @@
 #import "XVimKeymap.h"
 #import "XVimUtil.h"
 #import "XVimTester.h"
+#import "NSURL+XVimXcodeModule.h"
 
 @implementation XVimExArg
 @synthesize arg,cmd,forceit,noRangeSpecified,lineBegin,lineEnd,addr_count;
@@ -938,6 +940,56 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
     [NSApp sendAction:@selector(closeDocument:) to:nil from:self];
 }
 
+-(void)highlight:(XVimExArg*)args inWindow:(XVimWindow*)window {
+    XVimOptions* options = [[XVim instance] options];
+   	NSString *argString = args.arg;
+    NSScanner* scanner = [NSScanner scannerWithString:argString];
+    
+    NSString* key = nil;
+    NSCharacterSet* whiteSpaceSet = [NSCharacterSet whitespaceCharacterSet];
+    [scanner scanCharactersFromSet:whiteSpaceSet intoString:&key];
+    [scanner scanUpToCharactersFromSet:whiteSpaceSet intoString:&key];
+    
+    NSMutableDictionary* colorMap = [NSMutableDictionary dictionaryWithDictionary:options.highlight];
+    if( key == nil || colorMap[key] == nil ) {
+        return;
+    }
+    
+    NSMutableDictionary* textColorMap = [NSMutableDictionary dictionaryWithDictionary:colorMap[key]];
+    while( !scanner.isAtEnd ) {
+        NSMutableCharacterSet* characterSet = [NSMutableCharacterSet whitespaceCharacterSet];
+        [characterSet addCharactersInString:@"="];
+        
+        NSString* fgOrBg = nil;
+        [scanner scanCharactersFromSet:characterSet intoString:&fgOrBg];
+        if( scanner.isAtEnd ) {
+            return;
+        }
+        [scanner scanUpToCharactersFromSet:characterSet intoString:&fgOrBg];
+        
+        NSString* equal = nil;
+        [scanner scanCharactersFromSet:[NSMutableCharacterSet characterSetWithCharactersInString:@"="] intoString:&equal];
+        if( scanner.isAtEnd ) {
+            return;
+        }
+        
+        NSString* colorStr = nil;
+        [scanner scanCharactersFromSet:whiteSpaceSet intoString:&colorStr];
+        [scanner scanUpToCharactersFromSet:whiteSpaceSet intoString:&colorStr];
+        
+        if( !fgOrBg || !colorStr ) {
+            return;
+        }
+        
+        NSColor* color = [NSColor colorWithString:colorStr];
+        if( color ) {
+            textColorMap[fgOrBg] = color;
+        }
+    }
+    colorMap[key] = textColorMap;
+    options.highlight = colorMap;
+}
+
 - (void)imap:(XVimExArg*)args inWindow:(XVimWindow*)window{
 	[self mapMode:XVIM_MODE_INSERT withArgs:args remap:YES];
 }
@@ -1495,6 +1547,29 @@ static const NSTimeInterval EXTERNAL_COMMAND_TIMEOUT_SECS = 5.0;
                                           , documentPath ?             documentPath : @"", @"%"
                                           , nil];
         [ self _expandSpecialExTokens:args contextDict:contextForExCmd];
+    }
+    else if( [documentURL isXcodeModuleSchemeURL] ){
+        // Xcode convert Objective-C Framework header to swift format except
+        // the swift module file that includes Array and etc.
+        NSMutableDictionary* contextForExCmd = [NSMutableDictionary dictionary];
+        // We use converted text as is.
+        // The converted swift file name is set to current file name symbol '%'.
+        NSFileManager* fm = [NSFileManager defaultManager];
+        NSString* swiftpath = [NSHomeDirectory() stringByAppendingPathComponent:@".xvimtmp.swift"];
+        NSString* str = window.sourceView.string;
+        if( str.length > 0 ){
+            NSData* data = [NSData dataWithBytes:(void*)str.UTF8String length:str.length];
+            [fm createFileAtPath:swiftpath contents:data attributes:nil];
+            contextForExCmd[@"%"] = swiftpath ? swiftpath: @"";
+        }
+        // The Objective-C Framework header file is set to alternate file name symbol '#'.
+        NSString* objc_header = documentURL.xcode_source_header;
+        if( objc_header.length > 0 ){
+            contextForExCmd[@"#"] = objc_header ? objc_header: @"";
+        }
+        if( contextForExCmd.count > 0 ){
+            [self _expandSpecialExTokens:args contextDict:contextForExCmd];
+        }
     }
 
     NSString* scriptReturn = [ XVimTaskRunner runScript:args.arg
