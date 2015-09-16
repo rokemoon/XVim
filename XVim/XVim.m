@@ -39,6 +39,7 @@
 #import "IDEKit.h"
 #import "objc/runtime.h"
 #import "DVTSourceTextView+XVim.h"
+#import "XVimStatusLine.h"
 
 NSString * const XVimDocumentChangedNotification = @"XVimDocumentChangedNotification";
 NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
@@ -64,9 +65,8 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     }
 }
 
-+ (void) addXVimMenu{
++ (NSMenuItem*)xvimMenuItem{
     // Add XVim menu
-    NSMenu* menu = [[NSApplication sharedApplication] mainMenu];
     NSMenuItem* item = [[NSMenuItem alloc] init];
     item.title = @"XVim";
     NSMenu* m = [[NSMenu alloc] initWithTitle:@"XVim"];
@@ -108,19 +108,7 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
         [subm setSubmenu:cat_menu];
     }
     
-
-    NSMenuItem* editorMenuItem = [menu itemWithTitle:@"Editor"];
-    if (editorMenuItem) {
-        // Add XVim menu next to Editor menu
-        [[editorMenuItem submenu] addItem:[NSMenuItem separatorItem]];
-        [[editorMenuItem submenu] addItem:item];
-    } else {
-        // if editor menu is not available
-        NSInteger editorIndex = [menu indexOfItemWithTitle:@"Editor"];
-        [menu insertItem:item atIndex:editorIndex];
-    }
-    return;
-    
+    return item;
 }
 
 + (void) load{
@@ -145,10 +133,6 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     //Caution: parseRcFile can potentially invoke +instance on XVim (e.g. if "set ..." is
     //used in .ximvrc) so we must be sure to call it _AFTER_ +instance has completed
     [[XVim instance] parseRcFile];
-    
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self addXVimMenu];
-    });
     
     // This is for reverse engineering purpose. Comment this in and log all the notifications named "IDE" or "DVT"
     // [[NSNotificationCenter defaultCenter] addObserver:[XVim class] selector:@selector(receiveNotification:) name:nil object:nil];
@@ -188,8 +172,14 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
 - (id)init {
 	if (self = [super init]) {
 		self.options = [[XVimOptions alloc] init];
-	}
-	return self;
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(addMenuItem:) name:NSApplicationDidFinishLaunchingNotification object:nil];
+    }
+    return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)init2{
@@ -218,7 +208,17 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     [_options addObserver:self forKeyPath:@"debug" options:NSKeyValueObservingOptionNew context:nil];
 }
 
-
+- (void)addMenuItem:(NSNotification*)notification{
+    // It will fail in Xcode 6.4
+    // Check IDEApplicationController+Xvim.m
+    
+    NSMenu *menu = [[NSApplication sharedApplication] menu];
+    
+    NSMenuItem *editorMenuItem = [menu itemWithTitle:@"Editor"];
+    [[editorMenuItem submenu] addItem:[[self class] xvimMenuItem]];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:NSApplicationDidFinishLaunchingNotification object:nil];
+}
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context{
     if( [keyPath isEqualToString:@"debug"]) {
@@ -232,9 +232,10 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     } else if( [keyPath isEqualToString:@"document"] ){
         NSString *documentPath = [[[object document] fileURL] path];
         self.document = documentPath;
+        IDEEditor* editor = (__bridge IDEEditor*)context;
         
         if (documentPath != nil) {
-            NSDictionary *userInfo = [NSDictionary dictionaryWithObject:documentPath forKey:XVimDocumentPathKey];
+            NSDictionary *userInfo = @{XVimDocumentPathKey:documentPath, XVimStatusLineIDEEditorKey:editor};
             [[NSNotificationCenter defaultCenter] postNotificationName:XVimDocumentChangedNotification object:nil userInfo:userInfo];
         }
     }

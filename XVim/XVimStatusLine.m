@@ -18,6 +18,8 @@
 #define STATUS_LINE_HEIGHT 18 
 #define MAX_STATUS_LINE_FONT_SIZE 14 
 
+NSString* const XVimStatusLineIDEEditorKey = @"IDEEditor";
+
 @interface XVimStatusLine ()
 
 - (void)_documentChangedNotification:(NSNotification *)notification;
@@ -82,6 +84,9 @@
     [_status setFrame:NSMakeRect(0, 0, parentRect.size.width, STATUS_LINE_HEIGHT)];
 	[_status setFont:sourceFont];
 	[_status setInset:inset];
+    [_status setBackgroundColor:[theme sourceTextBackgroundColor]];
+    [_status setTextColor:[theme sourcePlainTextColor]];
+
     // This is heuristic way...
     if( [NSStringFromClass([container class]) isEqualToString:@"IDEComparisonEditorAutoLayoutView"] ){
         // Nothing ( Maybe AutoLayout view does the job "automatically")
@@ -102,8 +107,10 @@
 
 - (void)_documentChangedNotification:(NSNotification *)notification
 {
-    NSString *documentPath = [[notification userInfo] objectForKey:XVimDocumentPathKey];
-    if (documentPath != nil) {
+    NSDictionary* dic = [notification userInfo];
+    NSString *documentPath = dic[XVimDocumentPathKey];
+    IDEEditor* editor = dic[XVimStatusLineIDEEditorKey];
+    if (documentPath != nil && editor != nil && editor == self.editor ) {
         [_status setString:documentPath];
     }
 }

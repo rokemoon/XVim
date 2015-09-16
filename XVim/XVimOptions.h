@@ -26,6 +26,8 @@
 @property BOOL relativenumber;
 @property BOOL alwaysuseinputsource; //XVim original
 @property BOOL blinkcursor;
+@property BOOL startofline;
+@property (nonatomic, strong) NSDictionary* highlight;
 
 - (id)getOption:(NSString*)name;
 - (void)setOption:(NSString*)name value:(id)value;
