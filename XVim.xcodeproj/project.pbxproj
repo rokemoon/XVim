@@ -741,7 +741,7 @@
 		A2B4BAAF14D59F6600D817B0 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0630;
+				LastUpgradeCheck = 0700;
 			};
 			buildConfigurationList = A2B4BAB214D59F6600D817B0 /* Build configuration list for PBXProject "XVim" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -905,6 +905,7 @@
 					"$(DEVELOPER_DIR)/../PlugIns/IDESourceEditor.ideplugin/Contents/MacOS",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.JugglerShu.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = XVim;
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(inherited)";
@@ -937,6 +938,7 @@
 					"$(DEVELOPER_DIR)/../PlugIns/IDESourceEditor.ideplugin/Contents/MacOS",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				PRODUCT_BUNDLE_IDENTIFIER = "net.JugglerShu.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = XVim;
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = "$(inherited)";
@@ -958,6 +960,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(DEVELOPER_DIR)/../Frameworks",
 					"$(DEVELOPER_DIR)/../PlugIns",
