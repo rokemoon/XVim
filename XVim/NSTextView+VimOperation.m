@@ -632,7 +632,9 @@
         }else{
             // Text object expands one text object ( the text object under insertion point + 1 )
             if( ![self.textStorage isEOF:self.insertionPoint+1]){
-                r = [self xvim_getMotionRange:self.insertionPoint+1 Motion:motion];
+                if( motion.motion != TEXTOBJECT_UNDERSCORE) {
+                    r = [self xvim_getMotionRange:self.insertionPoint+1 Motion:motion];
+                }
             }
             if( self.selectionBegin > r.begin ){
                 self.selectionBegin = r.begin;
@@ -1327,7 +1329,15 @@
     }
 
     if (right) {
-        NSString *s = [NSString stringMadeOfSpaces:shiftWidth];
+        NSString *s;
+        if ([XVim instance].options.expandtab) {
+            s = [NSString stringMadeOfSpaces:shiftWidth];
+        } else {
+            s = @"\t";
+            while ([s length] < (shiftWidth / ts.xvim_indentWidth)) {
+                s = [s stringByAppendingString:@"\t"];
+            }
+        }
         [self xvim_blockInsertFixupWithText:s mode:XVIM_INSERT_SPACES count:1 column:column lines:lines];
     } else {
         for (NSUInteger line = lines.begin; line <= lines.end; line++) {
@@ -2411,6 +2421,9 @@
             break;
         case TEXTOBJECT_WORD:
             range = [self.textStorage currentWord:begin count:motion.count  option:motion.option];
+            break;
+        case TEXTOBJECT_UNDERSCORE:
+            range = [self.textStorage currentCamelCaseWord:begin count:motion.count option:motion.option];
             break;
         case TEXTOBJECT_BRACES:
             range = xv_current_block([self xvim_string], current, motion.count, !(motion.option & TEXTOBJECT_INNER), '{', '}');
