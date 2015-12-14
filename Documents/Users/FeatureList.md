@@ -43,6 +43,11 @@ you can specify following line in .xvimrc.
 
      inoremap <C-e> <C-o>$
 
+## Navigation
+C-], C-t
+
+C-] is mapped to "Jump To Definition".
+C-t is mapped to "Go Back" (as it is the closest thing Xcode has to vims behavior).
 
 ## Yank, put and change
 
@@ -65,6 +70,22 @@ Visual mode: u, U, ~, gu, gU
 ## Undo
 
 u, C-r
+
+## Folds
+
+zc, zC, zm, zM, zo, zO, zr, zR
+
+zc - fold
+(Note: zC is mapped to zc as Xcode does not have similar vim behavior.)
+
+zM - fold all
+(Note: zm is mapped to zM as Xcode does not have similar vim behavior.)
+
+zo - unfold
+(Note: zO is mapped to zo as Xcode does not have similar vim behavior.)
+
+zR - unfold all
+(Note: zr is mapped to zR as Xcode does not have similar vim behavior.)
 
 ## Visual
 v, V, Ctrl-v
