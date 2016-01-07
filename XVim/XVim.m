@@ -40,6 +40,7 @@
 #import "objc/runtime.h"
 #import "DVTSourceTextView+XVim.h"
 #import "XVimStatusLine.h"
+#import "XVimAboutDialog.h"
 
 NSString * const XVimDocumentChangedNotification = @"XVimDocumentChangedNotification";
 NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
@@ -65,6 +66,19 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     }
 }
 
++ (NSString*)xvimrc{
+    NSString *homeDir = NSHomeDirectoryForUser(NSUserName());
+    NSString *keymapPath = [homeDir stringByAppendingString: @"/.xvimrc"]; 
+    return [[NSString alloc] initWithContentsOfFile:keymapPath encoding:NSUTF8StringEncoding error:NULL];
+}
+
++ (void)about:(id)sender{
+    XVimAboutDialog* p = [[XVimAboutDialog alloc] initWithWindowNibName:@"about"];
+    NSWindow* win = [p window];
+    [[NSApplication sharedApplication] runModalForWindow:win];
+}
+
+#define XVIM_MENU_TOGGLE_IDENTIFIER @"XVim.Enable";
 + (NSMenuItem*)xvimMenuItem{
     // Add XVim menu
     NSMenuItem* item = [[NSMenuItem alloc] init];
@@ -78,7 +92,14 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     [subitem setState:NSOnState];
     subitem.target = [XVim instance];
     subitem.action = @selector(toggleXVim:);
-    subitem.keyEquivalent = @"X";
+    subitem.representedObject = XVIM_MENU_TOGGLE_IDENTIFIER;
+    [m addItem:subitem];
+    
+    subitem = [[NSMenuItem alloc] init];
+    subitem.title = @"About XVim";
+    [subitem setEnabled:YES];
+    subitem.target = [XVim class];
+    subitem.action = @selector(about:);
     [m addItem:subitem];
     
     // Test cases
@@ -212,6 +233,13 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
     // It will fail in Xcode 6.4
     // Check IDEApplicationController+Xvim.m
     
+    // Add XVim menu keybinding into keybind preference
+    IDEMenuKeyBindingSet *keyset = [(IDEKeyBindingPreferenceSet*)[[IDEKeyBindingPreferenceSet preferenceSetsManager] currentPreferenceSet] valueForKey:@"_menuKeyBindingSet"];
+    IDEKeyboardShortcut* shortcut = [[IDEKeyboardShortcut alloc] initWithKeyEquivalent:@"x" modifierMask:NSCommandKeyMask|NSShiftKeyMask];
+    IDEMenuKeyBinding *binding = [[IDEMenuKeyBinding alloc] initWithTitle:@"Enable" parentTitle:@"XVim" group:@"XVim" actions:@[ @"toggleXVim:"]  keyboardShortcuts:@[shortcut]];
+    binding.commandIdentifier = XVIM_MENU_TOGGLE_IDENTIFIER;// This must be same as menu items's represented Object.
+    [keyset insertObject:binding inKeyBindingsAtIndex:0];
+    
     NSMenu *menu = [[NSApplication sharedApplication] menu];
     
     NSMenuItem *editorMenuItem = [menu itemWithTitle:@"Editor"];
@@ -233,12 +261,8 @@ NSString * const XVimDocumentPathKey = @"XVimDocumentPathKey";
 }
     
 - (void)parseRcFile {
-    NSString *homeDir = NSHomeDirectoryForUser(NSUserName());
-    NSString *keymapPath = [homeDir stringByAppendingString: @"/.xvimrc"]; 
-    NSString *keymapData = [[NSString alloc] initWithContentsOfFile:keymapPath
-                                                           encoding:NSUTF8StringEncoding
-															  error:NULL];
-	for (NSString *string in [keymapData componentsSeparatedByString:@"\n"])
+    NSString* rc = [XVim xvimrc];
+	for (NSString *string in [rc componentsSeparatedByString:@"\n"])
 	{
 		[self.excmd executeCommand:[@":" stringByAppendingString:string] inWindow:nil];
 	}
